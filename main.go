@@ -10,24 +10,22 @@ func main() {
 
 	if len(args) < 1 {
 		fmt.Println("no website provided")
-		os.Exit(1)
+		return
 	}
 	if len(args) > 1 {
 		fmt.Println("too many arguments provided")
-		os.Exit(1)
+		return
 	}
 
 	base_url := args[0]
 
 	fmt.Printf("starting crawl of: %s\n", base_url)
 
-	pages, err := crawlPage(base_url, base_url, make(map[string]int))
-	if err != nil {
-		fmt.Println(err)
-	}
+	pages := make(map[string]int)
 
-	for _, val := range pages {
-		fmt.Println(val)
-	}
+	crawlPage(base_url, base_url, pages)
 
+	for normURL, count := range pages {
+		fmt.Printf("%d - %s\n", count, normURL)
+	}
 }
