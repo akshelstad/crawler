@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -17,13 +19,13 @@ func getURLsFromHTML(htmlBody, rawBaseURL string) ([]string, error) {
 
 	baseURL, err := url.Parse(rawBaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't parse base URL: %v", err)
+		return nil, fmt.Errorf("failed to parse base URL: %v", err)
 	}
 
 	htmlReader := strings.NewReader(htmlBody)
 	doc, err := html.Parse(htmlReader)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't parse HTML: %v", err)
+		return nil, fmt.Errorf("failed to parse HTML: %v", err)
 	}
 
 	var urls []string
@@ -34,7 +36,7 @@ func getURLsFromHTML(htmlBody, rawBaseURL string) ([]string, error) {
 				if anchor.Key == "href" {
 					href, err := url.Parse(anchor.Val)
 					if err != nil {
-						fmt.Printf("couldn't parse href '%v': %v\n", anchor.Val, err)
+						fmt.Printf("failed to parse href '%v': %v\n", anchor.Val, err)
 						continue
 					}
 
@@ -51,4 +53,32 @@ func getURLsFromHTML(htmlBody, rawBaseURL string) ([]string, error) {
 	traverseNodes(doc)
 
 	return urls, nil
+}
+
+func getHTML(rawURL string) (string, error) {
+	// Fetch webpage at rawURL
+	resp, err := http.Get(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch URL: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode > 399 { // Check for 400+ status code
+		return "", fmt.Errorf("got HTTP error: %v", resp.Status)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	if !strings.Contains(contentType, "text/html") { // Check if content type is HTML
+		return "", fmt.Errorf("invalid content type: %v", contentType)
+	}
+
+	htmlBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %v", err)
+	}
+
+	// Convert HTML bytes to string
+	htmlBody := string(htmlBytes)
+
+	return htmlBody, nil
 }
