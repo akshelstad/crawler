@@ -65,4 +65,6 @@ func main() {
 	for normURL, count := range cfg.pages {
 		fmt.Printf("%d - %s\n", count, normURL)
 	}
+
+	printReport(cfg.pages, rawBaseURL)
 }
