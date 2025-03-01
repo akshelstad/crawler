@@ -11,16 +11,7 @@ import (
 )
 
 // getURLsFromHTML extracts URLs from an HTML body and applies a base URL to relative URLs
-func getURLsFromHTML(htmlBody, rawBaseURL string) ([]string, error) {
-	// Check if base URL is empty
-	if rawBaseURL == "" {
-		return nil, fmt.Errorf("base URL is empty")
-	}
-
-	baseURL, err := url.Parse(rawBaseURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse base URL: %v", err)
-	}
+func getURLsFromHTML(htmlBody string, baseURL *url.URL) ([]string, error) {
 
 	htmlReader := strings.NewReader(htmlBody)
 	doc, err := html.Parse(htmlReader)
