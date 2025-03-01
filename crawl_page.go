@@ -6,11 +6,10 @@ import (
 )
 
 func (cfg *config) crawlPage(rawCurrentURL string) {
+	defer cfg.wg.Done()
+
 	cfg.concurrencyControl <- struct{}{}
-	defer func() {
-		<-cfg.concurrencyControl
-		cfg.wg.Done()
-	}()
+	defer func() { <-cfg.concurrencyControl }()
 
 	// Parse current URL
 	parsedCurrentURL, err := url.Parse(rawCurrentURL)
@@ -50,6 +49,14 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 		return
 	}
 
+	cfg.mu.Lock()
+	if len(cfg.pages) >= cfg.maxPages {
+		cfg.mu.Unlock()
+		fmt.Println("Maximum pages reached")
+		return
+	}
+	cfg.mu.Unlock()
+
 	for _, url := range urls {
 		cfg.wg.Add(1)
 		go cfg.crawlPage(url)
@@ -59,6 +66,11 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 func (cfg *config) addPageVisit(normURL string) (isFirst bool) {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
+
+	// Check if maximum pages is reached
+	if len(cfg.pages) >= cfg.maxPages {
+		return false
+	}
 
 	if _, ok := cfg.pages[normURL]; ok {
 		cfg.pages[normURL]++
